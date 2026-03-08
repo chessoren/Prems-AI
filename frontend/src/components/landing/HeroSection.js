@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const HERO_IMG = "https://static.prod-images.emergentagent.com/jobs/6c9f14f2-9187-4856-bc77-28da5fee9f1e/images/1d16c3cacb4f9e357dfca5fda84463b7dcb874f6ab30274e4819359c25c9426c.png";
 
@@ -17,25 +18,48 @@ const HeroSection = () => {
 
       <div className="relative max-w-5xl mx-auto px-6 text-center">
         {/* Badge */}
-        <div data-testid="hero-badge" className="inline-flex items-center gap-2 bg-white border border-neutral-200 rounded-full pl-1 pr-4 py-1 mb-8 shadow-sm hover:shadow-md transition-shadow">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          data-testid="hero-badge"
+          className="inline-flex items-center gap-2 bg-white border border-neutral-200 rounded-full pl-1 pr-4 py-1 mb-8 shadow-sm hover:shadow-md transition-shadow"
+        >
           <span className="bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Nouveau</span>
           <span className="text-sm text-neutral-700 font-medium">Chasseur immobilier IA</span>
-        </div>
+        </motion.div>
 
         {/* H1 */}
-        <h1 data-testid="hero-title" className="font-serif text-5xl md:text-7xl leading-[1.1] tracking-tight text-neutral-900 mb-6">
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          data-testid="hero-title"
+          className="font-serif text-5xl md:text-7xl leading-[1.1] tracking-tight text-neutral-900 mb-6"
+        >
           L'immobilier est une guerre.
           <br />
           <span className="italic">Envoyez votre soldat.</span>
-        </h1>
+        </motion.h1>
 
         {/* Subtitle */}
-        <p data-testid="hero-subtitle" className="text-neutral-500 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-          Prems d&eacute;tecte les annonces en temps r&eacute;el sur 350+ sites d'agences immobili&egrave;res et envoie votre dossier automatiquement. Vous ne recevez que les confirmations de visite.
-        </p>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          data-testid="hero-subtitle"
+          className="text-neutral-500 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
+        >
+          Prems détecte les annonces en temps réel sur 350+ sites d'agences immobilières et envoie votre dossier automatiquement. Vous ne recevez que les confirmations de visite.
+        </motion.p>
 
         {/* CTA Button */}
-        <div className="flex justify-center mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="flex justify-center mb-16"
+        >
           <button
             data-testid="hero-cta-btn"
             onClick={() => navigate('/signup')}
@@ -44,10 +68,15 @@ const HeroSection = () => {
             S'inscrire - 29€
             <ChevronRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
-        </div>
+        </motion.div>
 
         {/* Hero Image */}
-        <div className="relative max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 40, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.7, delay: 0.5 }}
+          className="relative max-w-4xl mx-auto"
+        >
           <div className="absolute -inset-4 bg-gradient-to-b from-orange-100/40 to-transparent rounded-3xl blur-xl" />
           <div className="relative bg-white rounded-2xl shadow-2xl shadow-neutral-200/60 border border-neutral-100 overflow-hidden">
             <img
@@ -57,7 +86,7 @@ const HeroSection = () => {
               data-testid="hero-image"
             />
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
