@@ -8,15 +8,14 @@ import bcrypt
 import random
 import string
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from pydantic import BaseModel
+from typing import Optional, List
 import uuid
 from datetime import datetime, timezone
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
@@ -29,29 +28,35 @@ api_router = APIRouter(prefix="/api")
 class RegisterRequest(BaseModel):
     email: str
     password: str
-
-class RegisterResponse(BaseModel):
-    user_id: str
-    email: str
-    message: str
-
-class ProfileRequest(BaseModel):
-    user_id: str
-    first_name: str
-    last_name: str
+    # Step 1: Housing
+    property_type: Optional[str] = None
+    furnished: Optional[str] = None
+    min_rooms: Optional[str] = None
+    min_surface: Optional[int] = None
+    # Step 2: Location & Budget
+    search_cities: Optional[str] = None
+    current_location: Optional[str] = None
+    budget_min: Optional[str] = None
+    budget_max: Optional[str] = None
+    deposit: Optional[str] = None
+    # Step 3: Equipment
+    equipments: Optional[List[str]] = None
+    additional_notes: Optional[str] = None
+    # Step 4: Calendar
+    move_date: Optional[str] = None
+    urgency: Optional[str] = None
+    visit_availability: Optional[List[str]] = None
+    # Step 5: Profile
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     phone: Optional[str] = None
     professional_status: Optional[str] = None
     monthly_income: Optional[str] = None
-    employer: Optional[str] = None
-    search_cities: Optional[str] = None
-    property_type: Optional[str] = None
-    max_budget: Optional[str] = None
-    min_surface: Optional[str] = None
-    preferred_areas: Optional[str] = None
-    dossier_link: Optional[str] = None
-    has_guarantor: Optional[bool] = False
+    guarantor_type: Optional[str] = None
+    guarantor_income: Optional[str] = None
+    # Discovery
     how_heard: Optional[str] = None
-    referred_by_code: Optional[str] = None
+    referral_code_used: Optional[str] = None
 
 class WaitlistStatus(BaseModel):
     user_id: str
@@ -62,10 +67,6 @@ class WaitlistStatus(BaseModel):
     total_waitlist: int
     referral_count: int
 
-class ApplyReferralRequest(BaseModel):
-    user_id: str
-    referral_code: str
-
 # ============ HELPERS ============
 
 def generate_referral_code():
@@ -75,108 +76,93 @@ def generate_referral_code():
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-def verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
-
 # ============ ROUTES ============
 
 @api_router.get("/")
 async def root():
-    return {"message": "Prems AI API"}
+    return {"message": "Prems AI API", "status": "ok"}
 
-@api_router.post("/auth/register", response_model=RegisterResponse)
+@api_router.post("/auth/register")
 async def register(req: RegisterRequest):
-    existing = await db.waitlist_users.find_one({"email": req.email.lower().strip()}, {"_id": 0})
+    email = req.email.lower().strip()
+    existing = await db.waitlist_users.find_one({"email": email}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Cet email est déjà inscrit.")
 
-    # Generate unique referral code
     referral_code = generate_referral_code()
     while await db.waitlist_users.find_one({"referral_code": referral_code}):
         referral_code = generate_referral_code()
 
-    # Calculate position
     count = await db.waitlist_users.count_documents({})
     position = count + 1
-
     user_id = str(uuid.uuid4())
+
     user_doc = {
         "user_id": user_id,
-        "email": req.email.lower().strip(),
+        "email": email,
         "password_hash": hash_password(req.password),
         "referral_code": referral_code,
-        "referred_by_code": None,
         "waitlist_position": position,
         "referral_count": 0,
-        "profile_completed": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-
-    await db.waitlist_users.insert_one(user_doc)
-
-    return RegisterResponse(
-        user_id=user_id,
-        email=req.email.lower().strip(),
-        message="Compte créé avec succès!"
-    )
-
-@api_router.post("/waitlist/complete-profile")
-async def complete_profile(req: ProfileRequest):
-    user = await db.waitlist_users.find_one({"user_id": req.user_id}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
-
-    update_data = {
         "first_name": req.first_name,
         "last_name": req.last_name,
         "phone": req.phone,
+        "property_type": req.property_type,
+        "furnished": req.furnished,
+        "min_rooms": req.min_rooms,
+        "min_surface": req.min_surface,
+        "search_cities": req.search_cities,
+        "current_location": req.current_location,
+        "budget_min": req.budget_min,
+        "budget_max": req.budget_max,
+        "deposit": req.deposit,
+        "equipments": req.equipments or [],
+        "additional_notes": req.additional_notes,
+        "move_date": req.move_date,
+        "urgency": req.urgency,
+        "visit_availability": req.visit_availability or [],
         "professional_status": req.professional_status,
         "monthly_income": req.monthly_income,
-        "employer": req.employer,
-        "search_cities": req.search_cities,
-        "property_type": req.property_type,
-        "max_budget": req.max_budget,
-        "min_surface": req.min_surface,
-        "preferred_areas": req.preferred_areas,
-        "dossier_link": req.dossier_link,
-        "has_guarantor": req.has_guarantor,
+        "guarantor_type": req.guarantor_type,
+        "guarantor_income": req.guarantor_income,
         "how_heard": req.how_heard,
-        "profile_completed": True,
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "referred_by_code": None,
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
 
-    # Handle referral code
-    if req.referred_by_code and req.referred_by_code.strip():
-        code = req.referred_by_code.strip().upper()
-        if code != user.get("referral_code"):
-            referrer = await db.waitlist_users.find_one({"referral_code": code}, {"_id": 0})
-            if referrer:
-                update_data["referred_by_code"] = code
-                # Boost referrer position by 10
-                new_pos = max(1, referrer["waitlist_position"] - 10)
-                await db.waitlist_users.update_one(
-                    {"user_id": referrer["user_id"]},
-                    {"$set": {"waitlist_position": new_pos}, "$inc": {"referral_count": 1}}
-                )
+    # Handle referral
+    if req.referral_code_used and req.referral_code_used.strip():
+        code = req.referral_code_used.strip().upper()
+        referrer = await db.waitlist_users.find_one({"referral_code": code}, {"_id": 0})
+        if referrer:
+            user_doc["referred_by_code"] = code
+            new_pos = max(1, referrer["waitlist_position"] - 10)
+            await db.waitlist_users.update_one(
+                {"user_id": referrer["user_id"]},
+                {"$set": {"waitlist_position": new_pos}, "$inc": {"referral_count": 1}}
+            )
 
-    await db.waitlist_users.update_one(
-        {"user_id": req.user_id},
-        {"$set": update_data}
-    )
+    await db.waitlist_users.insert_one(user_doc)
 
-    return {"message": "Profil complété!", "success": True}
+    return {
+        "user_id": user_id,
+        "email": email,
+        "referral_code": referral_code,
+        "waitlist_position": position,
+        "total_waitlist": position,
+        "first_name": req.first_name,
+        "referral_count": 0,
+        "message": "Inscription réussie!"
+    }
 
 @api_router.get("/waitlist/status/{user_id}", response_model=WaitlistStatus)
 async def get_waitlist_status(user_id: str):
     user = await db.waitlist_users.find_one({"user_id": user_id}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
-
     total = await db.waitlist_users.count_documents({})
-
     return WaitlistStatus(
-        user_id=user["user_id"],
-        email=user["email"],
+        user_id=user["user_id"], email=user["email"],
         first_name=user.get("first_name"),
         referral_code=user["referral_code"],
         waitlist_position=user["waitlist_position"],
@@ -189,7 +175,6 @@ async def get_waitlist_count():
     total = await db.waitlist_users.count_documents({})
     return {"count": total}
 
-# Include router
 app.include_router(api_router)
 
 app.add_middleware(
@@ -200,8 +185,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
