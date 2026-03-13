@@ -1,23 +1,30 @@
 /* ========== INPUT FIELD STYLES ========== */
 .input-field {
   width: 100%;
-  background: rgba(23, 23, 23, 0.5);
-  border: 1px solid rgba(64, 64, 64, 1);
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
   color: white;
-  font-size: 0.875rem;
-  transition: all 0.2s;
+  font-size: 0.9rem;
+  transition: all 0.25s ease;
+  letter-spacing: 0.01em;
 }
 
 .input-field::placeholder {
-  color: rgba(82, 82, 82, 1);
+  color: rgba(115, 115, 115, 0.7);
 }
 
 .input-field:focus {
   outline: none;
-  border-color: rgba(249, 115, 22, 0.5);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.06), 0 0 40px -10px rgba(249, 115, 22, 0.1);
+}
+
+.input-field:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 
